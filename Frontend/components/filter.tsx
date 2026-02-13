@@ -2,28 +2,37 @@ import type { EventLevel } from "types/events";
 import { Input } from "ui/input";
 
 const LEVEL_OPTIONS: { value: EventLevel; label: string }[] = [
-  { value: "INFO", label: "INFO" },
   { value: "DEBUG", label: "DEBUG" },
+  { value: "INFO", label: "INFO" },
   { value: "WARNING", label: "WARNING" },
   { value: "ERROR", label: "ERROR" },
+];
+
+const MIN_LEVEL_OPTIONS: { value: "" | EventLevel; label: string }[] = [
+  { value: "", label: "Dowolny" },
+  ...LEVEL_OPTIONS,
 ];
 
 type FilterProps = {
   dateFrom: string;
   dateTo: string;
   levelFilters: EventLevel[];
+  minLevel: "" | EventLevel;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
   onToggleLevel: (level: EventLevel) => void;
+  onMinLevelChange: (value: "" | EventLevel) => void;
 };
 
 export const Filter = ({
   dateFrom,
   dateTo,
   levelFilters,
+  minLevel,
   onDateFromChange,
   onDateToChange,
   onToggleLevel,
+  onMinLevelChange,
 }: FilterProps) => {
   return (
     <div className="flex flex-wrap items-end gap-4 mb-6 p-4 rounded-xl bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
@@ -45,9 +54,31 @@ export const Filter = ({
           onChange={onDateToChange}
         />
       </div>
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor="min-level"
+          className="text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Min. poziom (≥)
+        </label>
+        <select
+          id="min-level"
+          value={minLevel}
+          onChange={(e) =>
+            onMinLevelChange((e.target.value || "") as "" | EventLevel)
+          }
+          className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 text-sm focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+        >
+          {MIN_LEVEL_OPTIONS.map((opt) => (
+            <option key={opt.value || "any"} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Poziom
+          Poziom (dokładne)
         </span>
         <div className="flex flex-wrap gap-3">
           {LEVEL_OPTIONS.map((opt) => (

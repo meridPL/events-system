@@ -118,6 +118,26 @@ describe('EventsService', () => {
     expect(result[0].id).toBe('evt-001');
   });
 
+  it('findAll filters by minLevel (>=)', async () => {
+    const query: QueryEventDto = { minLevel: 'WARNING' };
+    const result = await service.findAll(query);
+    expect(result).toHaveLength(1);
+    expect(result[0].level).toBe('ERROR');
+  });
+
+  it('findAll minLevel INFO includes only INFO and higher', async () => {
+    const query: QueryEventDto = { minLevel: 'INFO' };
+    const result = await service.findAll(query);
+    expect(result).toHaveLength(3);
+    expect(result.every((e) => ['INFO', 'WARNING', 'ERROR'].includes(e.level))).toBe(true);
+  });
+
+  it('findAll minLevel DEBUG returns all', async () => {
+    const query: QueryEventDto = { minLevel: 'DEBUG' };
+    const result = await service.findAll(query);
+    expect(result).toHaveLength(4);
+  });
+
   it('findAll throws when file cannot be read', async () => {
     mockReadFile.mockRejectedValue(new Error('ENOENT: no such file'));
     const query: QueryEventDto = {};

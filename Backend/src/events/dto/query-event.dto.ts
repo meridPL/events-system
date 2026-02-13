@@ -2,7 +2,7 @@ import { IsIn, IsOptional, IsDateString, IsArray } from 'class-validator';
 import { Transform } from 'class-transformer';
 import type { EventLevel } from '../entities/event.entity';
 
-const EVENT_LEVELS: EventLevel[] = ['INFO', 'DEBUG', 'WARNING', 'ERROR'];
+const EVENT_LEVELS: EventLevel[] = ['DEBUG', 'INFO', 'WARNING', 'ERROR'];
 
 export class QueryEventDto {
   @IsOptional()
@@ -16,6 +16,11 @@ export class QueryEventDto {
   @IsArray()
   @IsIn(EVENT_LEVELS, { each: true })
   level?: EventLevel[];
+
+  /** Minimalny poziom logów (zdarzenia o poziomie >= minLevel). */
+  @IsOptional()
+  @IsIn(EVENT_LEVELS)
+  minLevel?: EventLevel;
 
   @IsOptional()
   @IsDateString()

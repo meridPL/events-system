@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { EventType, EventLevel } from "types/events";
 import { Filter } from "components/filter";
@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "ui/table";
 import { Badge } from "ui/badge";
+import { useDelayedLoading } from "app/hooks/useDelayedLoading";
 
 const API_BASE = "http://localhost:3000";
 const pageWrapper = "max-w-4xl mx-auto px-4 py-10 sm:px-6 lg:px-8 min-h-[60vh]";
@@ -20,12 +21,14 @@ type EventsFilters = {
   dateFrom?: string;
   dateTo?: string;
   levels?: EventLevel[];
+  minLevel?: EventLevel;
 };
 
 async function fetchEvents(filters: EventsFilters): Promise<EventType[]> {
   const params = new URLSearchParams();
   if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
   if (filters.dateTo) params.set("dateTo", filters.dateTo);
+  if (filters.minLevel) params.set("minLevel", filters.minLevel);
   filters.levels?.forEach((level) => params.append("level", level));
   const query = params.toString();
   const url = query ? `${API_BASE}/events?${query}` : `${API_BASE}/events`;
@@ -38,33 +41,24 @@ export default function Events() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [levelFilters, setLevelFilters] = useState<EventLevel[]>([]);
-  const [showLoading, setShowLoading] = useState(false);
+  const [minLevel, setMinLevel] = useState<EventLevel | "">("");
 
   const {
     data: events,
     isLoading,
     error,
   } = useQuery<EventType[]>({
-    queryKey: ["events", dateFrom, dateTo, levelFilters],
+    queryKey: ["events", dateFrom, dateTo, levelFilters, minLevel],
     queryFn: () =>
       fetchEvents({
         dateFrom,
         dateTo,
         levels: levelFilters.length > 0 ? levelFilters : undefined,
+        minLevel: minLevel || undefined,
       }),
   });
 
-  useEffect(() => {
-    if (!isLoading) {
-      setShowLoading(false);
-      return;
-    }
-    const timer = window.setTimeout(
-      () => setShowLoading(true),
-      LOADING_DELAY_MS,
-    );
-    return () => window.clearTimeout(timer);
-  }, [isLoading]);
+  const showSpinner = useDelayedLoading(isLoading, LOADING_DELAY_MS);
 
   const toggleLevel = (level: EventLevel) => {
     setLevelFilters((prev) =>
@@ -72,7 +66,7 @@ export default function Events() {
     );
   };
 
-  if (isLoading && showLoading) {
+  if (showSpinner) {
     return (
       <div className={pageWrapper}>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight mb-8">
@@ -114,9 +108,11 @@ export default function Events() {
         dateFrom={dateFrom}
         dateTo={dateTo}
         levelFilters={levelFilters}
+        minLevel={minLevel}
         onDateFromChange={setDateFrom}
         onDateToChange={setDateTo}
         onToggleLevel={toggleLevel}
+        onMinLevelChange={setMinLevel}
       />
 
       <div className="shrink-0">
@@ -125,7 +121,7 @@ export default function Events() {
             <TableHead>
               <TableHeaderCell>Wiadomość</TableHeaderCell>
               <TableHeaderCell>Poziom</TableHeaderCell>
-              <TableHeaderCell>Data</TableHeaderCell>
+              <TableHeaderCell>Data i godzina</TableHeaderCell>
             </TableHead>
             <TableBody>
               {events.map((event: EventType) => (
@@ -137,6 +133,7 @@ export default function Events() {
                   <TableCell>
                     {new Date(event.timestamp).toLocaleString("pl-PL", {
                       dateStyle: "short",
+                      timeStyle: "medium",
                     })}
                   </TableCell>
                 </TableRow>

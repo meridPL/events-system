@@ -3,7 +3,15 @@ import { join } from 'path';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { QueryEventDto } from './dto/query-event.dto';
-import { Event } from './entities/event.entity';
+import { Event, EventLevel } from './entities/event.entity';
+import { isDateInRange } from './utils/date.utils';
+
+const LEVEL_SEVERITY: Record<EventLevel, number> = {
+  DEBUG: 0,
+  INFO: 1,
+  WARNING: 2,
+  ERROR: 3,
+};
 
 @Injectable()
 export class EventsService {
@@ -14,15 +22,15 @@ export class EventsService {
     return events.filter((event) => {
       const matchLevel =
         !query.level?.length || query.level.includes(event.level);
-      const matchDataFrom =
-        !query.dateFrom ||
-        new Date(event.timestamp).toISOString().split('T')[0] >=
-          new Date(query.dateFrom).toISOString().split('T')[0];
-      const matchDataTo =
-        !query.dateTo ||
-        new Date(event.timestamp).toISOString().split('T')[0] <=
-          new Date(query.dateTo).toISOString().split('T')[0];
-      return matchLevel && matchDataFrom && matchDataTo;
+      const matchMinLevel =
+        query.minLevel == null ||
+        LEVEL_SEVERITY[event.level] >= LEVEL_SEVERITY[query.minLevel];
+      const matchDate = isDateInRange(
+        event.timestamp,
+        query.dateFrom,
+        query.dateTo,
+      );
+      return matchLevel && matchMinLevel && matchDate;
     });
   }
 
